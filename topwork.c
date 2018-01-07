@@ -18,12 +18,10 @@
  *    - freeze frames
  */
 
+#ifdef WINDDK
 #include <windows.h>
-#ifdef WIN_PRINTF
 #include <strsafe.h>
-#else // WIN_PRINTF
-#include "resource.h"
-#endif // WIN_PRINTF
+#endif // WINDDK
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
@@ -35,7 +33,9 @@
 #include "topwork.h"
 
 COMPORT comport;
+#ifdef WIN_GUI
 HWND ghMainWnd = NULL;
+#endif // WIN_GUI
 int stopWork=0;
 
 #ifdef LOG_COMMS
@@ -73,7 +73,7 @@ static char BCDToByte(char hi, char lo)
     return (hi << 4) + lo;
 }
 
-static DWORD getVinInfo(char *simBuffer, size_t simBufSize)
+static long getVinInfo(char *simBuffer, size_t simBufSize)
 {
     int response;
     char cmdbuf[8];
@@ -83,17 +83,13 @@ static DWORD getVinInfo(char *simBuffer, size_t simBufSize)
     char *next;
     char *vptr;
     DWORD numBytes = 0;
-    DWORD modelYear = 0;
+    long modelYear = 0;
 
     if (NULL == simBuffer)
     {
         memset(inbuf, 0, sizeof(inbuf));
         // first and foremost, ask for the VIN information
-#ifdef WIN_PRINTF
-        StringCchCopyA(cmdbuf, sizeof(cmdbuf), "0902");
-#else // WIN_PRINTF
-        strcpy(cmdbuf, "0902");
-#endif // WIN_PRINTF
+        StringCchCopy(cmdbuf, sizeof(cmdbuf), "0902");
         response = sendAndWaitForResponse(inbuf, sizeof(inbuf), cmdbuf, &numBytes, CMD_TO_RESPONSE_VIN_SLEEP_MS);
         ptr = inbuf;
     }
@@ -101,7 +97,7 @@ static DWORD getVinInfo(char *simBuffer, size_t simBufSize)
     {
         response = DATA;
         ptr = simBuffer;
-        numBytes = (DWORD) simBufSize;
+        numBytes = (long) simBufSize;
     }
     // this gets a little tricky
     // the format for this command returns a length in units
@@ -119,7 +115,7 @@ static DWORD getVinInfo(char *simBuffer, size_t simBufSize)
         next = strstr(ptr, "0:490201");
         if (next)
         {
-            numBytes -= (DWORD)(next - ptr);
+            numBytes -= (long)(next - ptr);
             ptr = next;
             numBytes -= 8;
             ptr += 8;
@@ -137,7 +133,7 @@ static DWORD getVinInfo(char *simBuffer, size_t simBufSize)
             next = strstr(ptr, "1:");
             if (next)
             {
-                numBytes -= (DWORD)(next - ptr);
+                numBytes -= (long)(next - ptr);
                 ptr = next;
                 ptr += 2;
                 numBytes -= 2;
@@ -154,7 +150,7 @@ static DWORD getVinInfo(char *simBuffer, size_t simBufSize)
                 next = strstr(ptr, "2:");
                 if (next)
                 {
-                    numBytes -= (DWORD)(next - ptr);
+                    numBytes -= (long)(next - ptr);
                     ptr = next;
                     numBytes -= 2;
                     ptr += 2;
@@ -228,39 +224,30 @@ static DWORD getVinInfo(char *simBuffer, size_t simBufSize)
         // make the adjustment to the new year range.
         modelYear += 2010 - 1980;
     }
-#ifdef WIN_PRINTF
     StringCchPrintf(inbuf, sizeof(inbuf), "%lu", modelYear);
-#else // WIN_PRINTF
-    sprintf(inbuf, "%lu", modelYear);
-#endif // WIN_PRINTF
 
-#ifdef WIN_PRINTF
-    printf("Vehicle VIN: %s  Model year: %s\n", vin, inbuf);
-#else   /* WIN_PRINTF */
+#ifdef WIN_GUI
     SetDlgItemText(ghMainWnd, IDC_VEHICLEVINVALUE, vin);
     SetDlgItemText(ghMainWnd, IDC_MODELYEARVALUE, inbuf);
-#endif  /* WIN_PRINTF */
+#else   /* WIN_GUI */
+    printf("Vehicle VIN: %s  Model year: %s\n", vin, inbuf);
+#endif  /* WIN_GUI */
     return numBytes;
 }
 
 void workInit(char *simBuffer, size_t simBufSize, int comPortNumber)
 {
-    import_trouble_codes();
-
+    initializeUnknownList();
     if (simBuffer)
     {
         comport.status = READY;
-        simBufSize = compress_response(simBuffer, (DWORD) simBufSize);
+        simBufSize = compress_response(simBuffer, (long) simBufSize);
     }
     else
     {
 #ifdef LOG_COMMS
         char temp_buf[256];
-#ifdef WIN_PRINTF
         StringCchCopy(comm_log_file_name, sizeof(comm_log_file_name), "comm_log.txt");
-#else // WIN_PRINTF
-        strcpy(comm_log_file_name, "comm_log.txt");
-#endif // WIN_PRINTF
         remove(comm_log_file_name);
         write_comm_log("START_TIME", temp_buf);
 #endif
@@ -276,6 +263,7 @@ void workInit(char *simBuffer, size_t simBufSize, int comPortNumber)
     {
         simBufSize = getVinInfo(simBuffer, simBufSize);
     }
+    destroyUnknownList();
 }
 
 void process_all_codes(char *simBuffer)
@@ -297,11 +285,7 @@ void process_all_codes(char *simBuffer)
             do
             {
                 index = (bank * 0x20) + 1;    // set the index to the starting pid for that bank
-#ifdef WIN_PRINTF
                 StringCchPrintf(cmdbuf, sizeof(cmdbuf), "%02X%X0", MODE_CURRENT_DATA, bank*2);
-#else // WIN_PRINTF
-                sprintf(cmdbuf, "%02X%X0", MODE_CURRENT_DATA, bank*2);
-#endif // WIN_PRINTF
                 // generate current mode commands
                 response = sendAndWaitForResponse(inbuf, sizeof(inbuf), cmdbuf, &numBytes, CMD_TO_RESPONSE_SLEEP_MS);
                 if (DATA == response)
@@ -320,11 +304,7 @@ void process_all_codes(char *simBuffer)
                             if (codes & 0x80000000)
                             {
                                 // query each of the interfaces supported
-#ifdef WIN_PRINTF
                                 StringCchPrintf(cmdbuf, sizeof(cmdbuf), "%02X%02X", MODE_CURRENT_DATA, index);
-#else // WIN_PRINTF
-                                sprintf(cmdbuf, "%02X%02X", MODE_CURRENT_DATA, index);
-#endif // WIN_PRINTF
                                 response = sendAndWaitForResponse(inbuf, sizeof(inbuf), cmdbuf, &numBytes, CMD_TO_RESPONSE_SLEEP_MS);
                                 cmdbuf[0] = '4';  // replace command with response byte and find
                                 ptr = strstr(inbuf, cmdbuf);
@@ -335,19 +315,15 @@ void process_all_codes(char *simBuffer)
                                     {
                                         process_and_display_data(ptr, simBuffer);
                                     }
-#ifdef WIN_PRINTF
                                     else
                                     {
                                         printf("PID %02X reported and not handled\n", (int) index);
                                     }
-#endif // WIN_PRINTF
                                 }
-#ifdef WIN_PRINTF
                                 else
                                 {
                                     printf("Hmmm. PID %02X reported as supported, but no response to query\n", (int) index);
                                 }
-#endif // WIN_PRINTF
                             }
                             ++index;        // account for numeric index
                             codes <<= 1;    // shift next bit up
@@ -373,11 +349,7 @@ void process_all_codes(char *simBuffer)
             /* do not process the indices reports */
             if (codeIndex != 0x20 && codeIndex != 0x40)
             {
-#ifdef WIN_PRINTF
                 StringCchPrintf(cmdbuf, sizeof(cmdbuf), "41%02X", codeIndex);
-#else // WIN_PRINTF
-                sprintf(cmdbuf, "41%02X", codeIndex);
-#endif // WIN_PRINTF
                 ptr = strstr(simBuffer, cmdbuf);
                 if (ptr)
                 {

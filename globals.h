@@ -8,4 +8,23 @@
 #define METRIC     0
 #define IMPERIAL    1
 
+#ifndef WINDDK
+#include <unistd.h>
+#define HANDLE  int
+#define DWORD   long
+#define Sleep(x)   sleep((x)*1000)
+#endif // WINDDK
+
+#ifndef StringCchPrintf
+#define StringCchPrintf snprintf
+#endif // StringCchPrintf
+
+#ifndef StringCchCopy
+#define StringCchCopy(a,b,c) strncpy(a,c,b)
+#endif // StringCchCopy
+
+#ifndef StringCchCatN
+#define StringCchCatN strncat
+#endif // StringCchCatN
+
 #endif  /* GLOBALS_H */

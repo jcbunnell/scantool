@@ -18,7 +18,9 @@ typedef enum
 void write_comm_log(const char *marker, const char *data);
 #endif
 
+#ifdef WIN_GUI
 extern HWND ghMainWnd;
+#endif //WIN_GUI
 extern int stopWork;
 
 void getStoredDiagnosticCodes();

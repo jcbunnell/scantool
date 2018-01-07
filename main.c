@@ -18,7 +18,9 @@
  *    - freeze frames
  */
 
+#ifdef WINDDK
 #include <windows.h>
+#endif // WINDDK
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
@@ -93,7 +95,7 @@ int main(int argc, char *argv[])
                     }
                 }
                 if (NULL == parm ||
-                    1 != sscanf_s(parm, "%d", &comPortNumber))
+                    1 != sscanf(parm, "%d", &comPortNumber))
                 {
                     comPortNumber = 7;
                 }

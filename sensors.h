@@ -5,7 +5,7 @@
 #define RESPONSE_SIZE   2
 #define OUTPUT_BUFFER_SIZE  1024
 
-#ifdef WIN_PRINTF
+#ifndef WIN_GUI
 #define IDC_VEHICLEVINVALUE             0
 #define IDC_SPEEDNUMVALUE               0
 #define IDC_BAROMETRICPRESSUREVALUE     0
@@ -64,7 +64,7 @@
 #define IDC_TIMESINCEENGINESTARTVALUE   0
 #define IDC_MODELYEARLABEL              0
 #define IDC_MODELYEARVALUE              0
-#endif  /* WIN_PRINTF*/
+#endif  /* WIN_GUI*/
 
 void obd_requirements_formula(int data, char *buf, size_t bufSize);
 void process_and_display_data(char *buf, char *simBuffer);

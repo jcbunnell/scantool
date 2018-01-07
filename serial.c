@@ -1,9 +1,10 @@
+
+#ifdef WINDDK
 #include <windows.h>
-#ifdef WIN_PRINTF
 #include <strsafe.h>
-#else // WIN_PRINTF
+#include <intsafe.h>
+#endif // WINDDK
 #include <stdio.h>
-#endif // WIN_PRINTF
 #include <string.h>
 #include <ctype.h>
 #include "globals.h"
@@ -11,7 +12,7 @@
 #include "topwork.h"
 
 extern COMPORT comport;
-HANDLE CommHandle;
+int CommHandle;
 int serial_time_out;
 
 int open_comport()
@@ -25,17 +26,11 @@ int open_comport()
       close_comport();    // close it
    }
 
-#ifdef WIN_PRINTF
    StringCchPrintf(temp_str, sizeof(temp_str), "COM%i", comport.number);
-#else // WIN_PRINTF
-   sprintf(temp_str, "COM%i", comport.number);
-#endif // WIN_PRINTF
-   CommHandle = CreateFile(temp_str, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
+   CommHandle = open(temp_str, O_RDWR);
    if (CommHandle == INVALID_HANDLE_VALUE)
    {
-#ifdef WIN_PRINTF
       printf("Unable to open %s\n", temp_str);
-#endif   // WIN_PRINTF
       comport.status = NOT_OPEN; //port was not open
       return -1; // return error
    }
@@ -87,11 +82,7 @@ void send_command(const char *command)
    char tx_buf[32];
    DWORD bytes_written;
 
-#ifdef WIN_PRINTF
    StringCchPrintf(tx_buf, sizeof(tx_buf), "%s\r", command);  // Append CR to the command
-#else // WIN_PRINTF
-   sprintf(tx_buf, "%s\r", command);  // Append CR to the command
-#endif // WIN_PRINTF
 
 #ifdef LOG_COMMS
    write_comm_log("TX", tx_buf);
@@ -106,7 +97,7 @@ int read_comport(char *response, DWORD *numBytes)
 {
 //   char *prompt_pos = NULL;
 
-   DWORD errors;
+   long errors;
    COMSTAT stat;
 
    *numBytes = 0;
@@ -131,10 +122,10 @@ int read_comport(char *response, DWORD *numBytes)
    }
 }
 
-DWORD compress_response(char *msg, DWORD bufSize)
+long compress_response(char *msg, long bufSize)
 {
-   DWORD cIndex=0;
-   DWORD mIndex=0;
+   long cIndex=0;
+   long mIndex=0;
    // go until end of input string
    while (mIndex < bufSize &&
           msg[mIndex])
@@ -246,7 +237,7 @@ const char *get_protocol_string(int interface_type, int protocol_id)
 }
 
 
-int sendAndWaitForResponse(char *buf, size_t bufSize, char *cmdbuf, DWORD *numBytes, DWORD sleepTimeMs)
+int sendAndWaitForResponse(char *buf, size_t bufSize, char *cmdbuf, DWORD *numBytes, long sleepTimeMs)
 {
    int response;
 

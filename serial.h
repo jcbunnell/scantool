@@ -65,7 +65,7 @@ extern "C" {
 extern HANDLE CommHandle;
 
 // function prototypes
-DWORD compress_response(char *msg, DWORD bufSize);
+long compress_response(char *msg, long bufSize);
 int open_comport();
 void close_comport();
 void send_command(const char *command);
@@ -74,12 +74,12 @@ void start_serial_timer(int delay);
 int process_response(const char *cmd_sent, char *msg_received);
 const char *get_protocol_string(int interface_type, int protocol_id);
 int display_error_message(int error, int retry);
-int sendAndWaitForResponse(char *buf, size_t bufSize, char *cmdbuf, DWORD *numBytes, DWORD sleepTimeMs);
+int sendAndWaitForResponse(char *buf, size_t bufSize, char *cmdbuf, DWORD *numBytes, long sleepTimeMs);
 #ifdef __cplusplus
    }
 #endif
 
-typedef enum 
+typedef enum
 {
     ST_READY
 } ST_STATUS_TYPES;

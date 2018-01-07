@@ -1,8 +1,7 @@
+#ifdef WINDDK
 #include <windows.h>
-#ifdef WIN_PRINTF
 #include <strsafe.h>
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
+#endif // WINDDK
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
@@ -11,11 +10,10 @@
 #include "globals.h"
 #include "serial.h"
 #include "trouble_code_reader.h"
-#include "scan_rc.h"
-#ifndef WIN_PRINTF
 #include "topwork.h"
+#ifdef WIN_GUI
 #include "resource.h"
-#endif  /* USER_PRINTF */
+#endif  /* WIN_GUI */
 
 #define MAX(x,y)     (((x) > (y)) ? (x) : (y))
 
@@ -40,235 +38,81 @@ typedef enum
 
 #define NUM_OF_RETRIES   3
 
-typedef struct TROUBLE_CODE
-{
-    char code[7];
-    char *description;
-    char *pending;
-    struct TROUBLE_CODE *next;
-} TROUBLE_CODE;
-
-static char mfr_code_description[] = "Manufacturer-specific code.  Please refer to your vehicle's service manual for more information";
-static char mfr_pending_code_description[] = "[Pending]\nManufacturer-specific code.  Please refer to your vehicle's service manual for more information";
-static char code_no_description[] = "";
-static char pending_code_no_description[] = "[Pending]";
-
-static int num_of_codes_reported = 0;
-static int current_code_index;
 static int mil_is_on; // MIL is ON or OFF
 
 #define CODE_LEN    5   /* Pxxxx or Uxxxx */
+#define MAX_UNKNOWN_SIZE  10
 
-static TROUBLE_CODE *pcode_list = NULL;
-static TROUBLE_CODE *ucode_list = NULL;
-static TROUBLE_CODE *trouble_codes = NULL;
+TROUBLE_CODE unknownTCList[MAX_UNKNOWN_SIZE];
 
-static void add_trouble_code(const TROUBLE_CODE *);
-static TROUBLE_CODE *get_trouble_code(int index);
-static int get_number_of_codes();
-static void clear_trouble_codes();
+static void add_trouble_code(char *, int);
+static int get_number_of_codes(void);
+static void clear_trouble_codes(void);
 
 // function definitions:
 static void trouble_codes_simulator(int show);
-static void swap_codes(TROUBLE_CODE *, TROUBLE_CODE *);
 static void handle_errors(int error, int operation);
-static TROUBLE_CODE *find_code(TROUBLE_CODE *);
-
-static char *pCodes=NULL;
-static DWORD sizePCodes=0;
-static char *uCodes=NULL;
-static DWORD sizeUCodes=0;
 
 extern COMPORT comport;
 
-int loadResource(WORD enumId,
-                 char **ppData,
-                 DWORD *pSizeData)
+void initializeUnknownList(void)
 {
-    LPVOID  resMem; /*  Our memory handle to the locked resource. */
-    HRSRC   resHandle; /*  The resource handle as found by lookup. */
-    HGLOBAL resData; /*  The resource data handle as loaded. */
-    HMODULE module = NULL;
-    DWORD mSize;
-    resHandle = FindResourceEx(module,
-                               "BINARY",
-                               MAKEINTRESOURCE(enumId),
-                               MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
-    if (!resHandle)
-    {
-#ifdef WIN_PRINTF
-        printf("Unable to find %d in %s resource (error=%d)", enumId,"BINARY", GetLastError());
-#else   /* WIN_PRINTF */
-#endif  /* WIN_PRINTF */
-        return 0;
-    }
-
-    mSize = SizeofResource(module, resHandle);
-    *pSizeData = mSize + 3;
-    if (!*pSizeData)
-    {
-#ifdef WIN_PRINTF
-        printf("%d resource has zero bytes.", enumId);
-#else   /* WIN_PRINTF */
-#endif  /* WIN_PRINTF */
-        return 0;
-    }
-
-    resData = LoadResource(module, resHandle);
-    if (!resData)
-    {
-#ifdef WIN_PRINTF
-        printf("Unable to load %d resource", enumId);
-#else   /* WIN_PRINTF */
-#endif  /* WIN_PRINTF */
-        return 0;
-    }
-
-    resMem = LockResource(resData);
-    if (!resMem)
-    {
-#ifdef WIN_PRINTF
-        printf("Unable to lock %d resource", enumId);
-#else   /* WIN_PRINTF */
-#endif  /* WIN_PRINTF */
-        return 0;
-    }
-
-    if (*ppData)
-    {
-        free(*ppData);
-    }
-    *ppData = (char *)malloc(*pSizeData);
-    if (*ppData)
-    {
-        char *ptr = mSize + *ppData;
-        // copy the data over and make sure there is a terminating CRLF and NULL
-        memcpy(*ppData, resMem, mSize);
-        *ptr++ = RECORD_DELIMITER;
-        *ptr++ = LINE_DELIMITER;
-        *ptr = 0x00;
-        *pSizeData -= 1;
-    }
-    return 1;
+    memset(unknownTCList, 0, sizeof(unknownTCList));
 }
 
-static void convertResourceToTC(char *pStart, DWORD sizeRes)
+void destroyUnknownList(void)
 {
-    char *ptr = pStart;
-    DWORD sizeLeft = sizeRes;
-    TROUBLE_CODE tCode;
-    while ((CODE_LEN < sizeLeft) && *ptr)
+    int k;
+    for (k = 0; k < MAX_UNKNOWN_SIZE; ++k)
     {
-        memset(&tCode, 0, sizeof(TROUBLE_CODE));
-        memcpy(tCode.code, ptr, CODE_LEN);
-        ptr += CODE_LEN;
-        sizeLeft -= CODE_LEN;
-
-        // skip over the code elements
-        while (*ptr != ' ' &&
-               *ptr != FIELD_DELIMITER &&
-               *ptr != RECORD_DELIMITER &&
-               *ptr != LINE_DELIMITER)
+        if (unknownTCList[k].code)
         {
-            ++ptr;
-            --sizeLeft;
+            free(unknownTCList[k].code);
+            unknownTCList[k].code = NULL;
+            unknownTCList[k].foundCount = 0;
         }
-        // skip over the intervening spaces
-        while (*ptr == ' ' ||
-               *ptr == FIELD_DELIMITER)
-        {
-            ++ptr;
-            --sizeLeft;
-        }
-        tCode.description = ptr;
-        // find the end of line
-        while (*ptr != '\0' &&
-               *ptr != RECORD_DELIMITER &&
-               *ptr != LINE_DELIMITER)
-        {
-            ++ptr;
-            --sizeLeft;
-        }
-        *ptr = 0;
-        ++ptr;
-        --sizeLeft;
-        // skip the end of line
-        while (*ptr != '\0' &&
-               (*ptr == RECORD_DELIMITER ||
-                *ptr == LINE_DELIMITER))
-        {
-            ++ptr;
-            --sizeLeft;
-        }
-        add_trouble_code(&tCode);
     }
 }
 
-int import_trouble_codes()
-{
-    loadResource(IDR_BINARY_PCODES, &pCodes, &sizePCodes);
-    loadResource(IDR_BINARY_UCODES, &uCodes, &sizeUCodes);
-
-    // convert the list, using trouble_codes as the anchor
-    convertResourceToTC(pCodes, sizePCodes);
-    // at the end, move the pointer to our pointer
-    pcode_list = trouble_codes;
-    trouble_codes = NULL;
-
-    // convert the list, using trouble_codes as the anchor
-    convertResourceToTC(uCodes, sizeUCodes);
-    // at the end, move the pointer to our pointer
-    ucode_list = trouble_codes;
-    trouble_codes = NULL;
-    return 1;
-}
-
-void ready_trouble_codes()
+void ready_trouble_codes(void)
 {
     clear_trouble_codes();
-    num_of_codes_reported = 0;
     mil_is_on = FALSE;
 }
-
 
 int parse_dtcs(const char *response, int pending)
 {
     char code_letter[] = "PCBU";
     int dtc_count = 0;
     size_t k;
-    TROUBLE_CODE temp_trouble_code;
+    char temp_trouble_code[CODE_LEN + 1];
     size_t respLen = strlen(response);
     ULONG respConvert;
 
     for (k = 0; k < respLen; k += 4)    // read codes
     {
-        memset(&temp_trouble_code, 0, sizeof(TROUBLE_CODE));
-        temp_trouble_code.code[0] = ' '; // make first position a blank space
-        // begin to copy from response to temp_trouble_code.code beginning with position #1
-        memcpy(temp_trouble_code.code + 1, response+k, CODE_LEN - 1);
+        memset(temp_trouble_code, 0, sizeof(temp_trouble_code));
+        temp_trouble_code[0] = ' '; // make first position a blank space
+                                    // begin to copy from response to temp_trouble_code.code beginning with position #1
+        memcpy(temp_trouble_code + 1, response + k, CODE_LEN - 1);
 
-        if (strcmp(temp_trouble_code.code, " 0000") == 0) // if there's no trouble code,
+        if (strcmp(temp_trouble_code, " 0000") == 0) // if there's no trouble code,
         {
             break;      // break out of the for() loop
         }
 
         // begin with position #1 (skip blank space), convert to hex, extract first two bits
         // use the result as an index into the code_letter array to get the corresponding code letter
-        respConvert = strtol(temp_trouble_code.code + 1, NULL, 16);
-        temp_trouble_code.code[0] = code_letter[respConvert >> 14];
-        temp_trouble_code.code[1] = (char)((respConvert >> 12) & 0x03);
-        temp_trouble_code.code[1] += 0x30; // convert to ASCII
-        if (pending)
-        {
-            temp_trouble_code.pending = "[Pending]";
-        }
-        add_trouble_code(&temp_trouble_code);
+        respConvert = strtol(temp_trouble_code + 1, NULL, 16);
+        temp_trouble_code[0] = code_letter[respConvert >> 14];
+        temp_trouble_code[1] = (char)((respConvert >> 12) & 0x03);
+        temp_trouble_code[1] += 0x30; // convert to ASCII
+        add_trouble_code(temp_trouble_code, pending);
         dtc_count++;
     }
 
     return dtc_count;
 }
-
 
 static int find_valid_response(char *buf, char *response, const char *filter, char **stop)
 {
@@ -319,15 +163,13 @@ static int find_valid_response(char *buf, char *response, const char *filter, ch
             }
         }
     }
-
     if (stop)
     {
         *stop = in_ptr;
     }
 
-    return(strlen(buf) > 0) ? TRUE : FALSE;
+    return (strlen(buf) > 0) ? TRUE : FALSE;
 }
-
 
 /* NOTE:
  *  ELM327 multi-message CAN responses are parsed using the following assumptions:
@@ -339,7 +181,6 @@ static int find_valid_response(char *buf, char *response, const char *filter, ch
  *     which should not happen. There is no other choice at the moment, unless we turn on headers, but that would mean rewriting
  *     whole communication paradigm.
  */
-
 int handle_read_codes(char *vehicle_response, int pending)
 {
     int dtc_count = 0;
@@ -350,14 +191,14 @@ int handle_read_codes(char *vehicle_response, int pending)
     int can_msg_cnt = 0;
     int can_resp_len[8];
     char *can_resp_buf[8];  // 8 CAN ECUs max
-    int buf_len, max_len, trim;
-    int i, j;
+    int buf_len;
+    int max_len;
+    int trim;
+    int i;
+    int j;
 
     // First, look for non-CAN and single-message CAN responses
-#ifdef WIN_PRINTF
-    StringCchCopyA(filter, sizeof(filter), (pending) ? "47" : "43");
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
+    StringCchCopy(filter, sizeof(filter), (pending) ? "47" : "43");
     while (find_valid_response(msg, start, filter, &start))
     {
         if (strlen(msg) == 4)  // skip '4X 00' CAN responses
@@ -365,10 +206,9 @@ int handle_read_codes(char *vehicle_response, int pending)
             continue;
         }
         // if even number of bytes (CAN), skip first 2 bytes, otherwise, skip 1 byte
-        i = (((strlen(msg)/2) & 0x01) == 0) ? 4 : 2;
+        i = (((strlen(msg) / 2) & 0x01) == 0) ? 4 : 2;
         dtc_count += parse_dtcs(msg + i, pending);
     }
-
 #if 0
     // Look for CAN multi-message responses
     start = vehicle_response;
@@ -389,26 +229,20 @@ int handle_read_codes(char *vehicle_response, int pending)
     {
         j = 0;
         start = vehicle_response;
-#ifdef WIN_PRINTF
         StringCchPrintf(filter, sizeof(filter), "%X:", i);
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
         while (find_valid_response(msg, start, filter, &start))
         {
             for (; j < can_resp_cnt; j++)  // find next response that is not full
             {
-                buf_len = (int) strlen(can_resp_buf[j]);
-                max_len = (can_resp_len[j]-2)*2;
+                buf_len = (int)strlen(can_resp_buf[j]);
+                max_len = (can_resp_len[j] - 2) * 2;
                 if (buf_len < max_len)
                 {
                     // first response -- skip '0:4XXX', all other -- skip 'X:'
                     // first response -- 6 bytes total, all other -- 7 bytes
                     // if this is last message for a response, trim padding
                     trim = (buf_len + (int)strlen(msg) - 2 >= max_len) ? buf_len + (int)strlen(msg) - 2 - max_len : 0;
-#ifdef WIN_PRINTF
                     StringCchCatN(can_resp_buf[j], max_len, msg + ((i == 0) ? 6 : 2), (i == 0) ? 8 : 14 - trim);
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
                     j++;
                     break;
                 }
@@ -425,47 +259,6 @@ int handle_read_codes(char *vehicle_response, int pending)
     return dtc_count; // return the actual number of codes read
 }
 
-
-void populate_trouble_codes_list(void)
-{
-    int i, j, min;
-    TROUBLE_CODE *trouble_code;
-    int codeCount = get_number_of_codes();
-    TROUBLE_CODE *code_def;
-
-    if (codeCount == 0)
-    {
-        return;
-    }
-
-    if (codeCount > 1)
-    {
-        for (i = 0; i < codeCount; i++)    // sort codes in ascending order
-        {
-            min = i;
-
-            for (j = i+1; j < codeCount; j++)
-                if (strcmp(get_trouble_code(j)->code, get_trouble_code(min)->code) < 0)
-                    min = j;
-
-            swap_codes(get_trouble_code(i), get_trouble_code(min));
-        }
-    }
-
-    for (trouble_code = trouble_codes; trouble_code; trouble_code = trouble_code->next)   // search for descriptions and solutions
-    {
-        // pass the letter (B, C, P, or U) to find_code, which returns the file handle
-        // if we reached EOF, or the file does not exist, go to the next DTC
-        code_def = find_code(trouble_code);
-        if (code_def)
-        {
-            trouble_code->description = code_def->description;
-        }
-
-    } // end of for() loop
-}
-
-
 void handle_errors(int error, int operation)
 {
     static int retry_attempts = NUM_OF_RETRIES;
@@ -475,7 +268,6 @@ void handle_errors(int error, int operation)
         display_error_message(error, FALSE);
         retry_attempts = NUM_OF_RETRIES;
         clear_trouble_codes();
-        num_of_codes_reported = 0;
         mil_is_on = FALSE;
     }
     else    // if we received "BUS BUSY", "DATA ERROR", "<DATA ERROR", SERIAL_ERROR, or RUBBISH,
@@ -500,186 +292,119 @@ void handle_errors(int error, int operation)
             display_error_message(error, FALSE);
             retry_attempts = NUM_OF_RETRIES; // reset the number of retry attempts
             clear_trouble_codes();
-            num_of_codes_reported = 0;
             mil_is_on = FALSE;
         }
     }
 }
 
-
-void swap_codes(TROUBLE_CODE *code1, TROUBLE_CODE *code2)
+void add_trouble_code(char *init_code, int pending)
 {
-    char temp_str[256];
-    char *temp_pend;
-
-#ifdef WIN_PRINTF
-    temp_pend = code1->pending;
-    StringCchCopyA(temp_str, sizeof(temp_str), code1->code);
-    code1->pending = code2->pending;
-    StringCchCopyA(code1->code, sizeof(code1->code), code2->code);
-    code2->pending = temp_pend;
-    StringCchCopyA(code2->code, sizeof(code2->code), temp_str);
-#else // WIN_PRINTF
-    temp_pend = code1->pending;
-    strcpy(temp_str, code1->code);
-    code1->pending = code2->pending;
-    strcpy(code1->code, code2->code);
-    code2->pending = temp_pend;
-    strcpy(code2->code, temp_str);
-#endif // WIN_PRINTF
-}
-
-
-void add_trouble_code(const TROUBLE_CODE * init_code)
-{
-    TROUBLE_CODE *next = trouble_codes;
-
     if (init_code)
     {
-        trouble_codes = (TROUBLE_CODE *)malloc(sizeof(TROUBLE_CODE));
-        if (trouble_codes)
+        int k = 0;
+        while (master_trouble_list[k].code)
         {
-#ifdef WIN_PRINTF
-            StringCchCopyA(trouble_codes->code, sizeof(trouble_codes->code), init_code->code);
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
-            trouble_codes->description = init_code->description;
-            trouble_codes->pending = init_code->pending;
-            trouble_codes->next = next;
+            if (0 == strcmp(init_code, master_trouble_list[k].code))
+            {
+                ++master_trouble_list[k].foundCount;
+                if (pending)
+                {
+                    master_trouble_list[k].pending = "[Pending]";
+                }
+                break;
+            }
+            ++k;
         }
-        else
+        // check if found
+        if (master_trouble_list[k].code == NULL)
         {
-            // if the malloc fails, just put the pointer back
-            trouble_codes = next;
+            k = 0;
+            while (k < MAX_UNKNOWN_SIZE &&
+                   unknownTCList[k].code &&
+                   strcmp(init_code, unknownTCList[k].code))
+            {
+                ++k;
+            }
+            if (k < MAX_UNKNOWN_SIZE)
+            {
+                if (unknownTCList[k].code)
+                {
+                    ++unknownTCList[k].foundCount;
+                }
+                else
+                {
+                    unknownTCList[k].code = (char *)malloc(CODE_LEN + 2);
+                    if (unknownTCList[k].code)
+                    {
+                        memcpy(unknownTCList[k].code, init_code, CODE_LEN + 1);
+                        unknownTCList[k].foundCount = 1;
+                        if (pending)
+                        {
+                            unknownTCList[k].pending = "[Pending]";
+                        }
+                    }
+                    else
+                    {
+                        printf("Error: Allocate for unknown trouble code failed\n");
+                    }
+                }
+            }
+            else
+            {
+                printf("Error: Unknown trouble list exceeded\n");
+            }
         }
     }
 }
 
-
-TROUBLE_CODE *get_trouble_code(int index)
+int get_number_of_codes(void)
 {
-    int i;
-    TROUBLE_CODE *trouble_code = trouble_codes;
-
-    for (i = 0; i < index; i++)
+    int iCount = 0;
+    int k = 0;
+    while (master_trouble_list[k].code)
     {
-        if (trouble_code->next == NULL)
-            return NULL;
-        trouble_code = trouble_code->next;
+        iCount += master_trouble_list[k].foundCount;
+        ++k;
     }
-
-    return trouble_code;
+    return iCount;
 }
 
-
-int get_number_of_codes()
+void clear_trouble_codes(void)
 {
-    TROUBLE_CODE *trouble_code = trouble_codes;
-    int ret = 0;
-
-    while (trouble_code)
+    int k = 0;
+    while (master_trouble_list[k].code)
     {
-        trouble_code = trouble_code->next;
-        ret++;
+        master_trouble_list[k].foundCount = 0;
+        ++k;
     }
-
-    return ret;
-}
-
-
-void clear_trouble_codes()
-{
-    TROUBLE_CODE *next;
-
-    while (trouble_codes)
-    {
-        next = trouble_codes->next;
-
-        free(trouble_codes);
-
-        trouble_codes = next;
-    }
-}
-
-
-TROUBLE_CODE *find_code(TROUBLE_CODE *inCode)
-{
-    TROUBLE_CODE *ret = NULL;
-
-    if ('P' == inCode->code[0])
-    {
-        ret = pcode_list;
-    }
-    else if ('U' == inCode->code[0])
-    {
-        ret = ucode_list;
-    }
-
-    while (ret)
-    {
-        if (0 == strcmp(inCode->code, ret->code))
-        {
-            break;
-        }
-        ret = ret->next;
-    }
-
-    return ret;
 }
 
 void printTroubleCodes(char *buf, size_t bufSize)
 {
-    HRESULT hr = S_OK;
-    if (trouble_codes)
+    int numFound = 0;
+    int k = 0;
+    size_t nowLen;
+    while (master_trouble_list[k].code)
     {
-        TROUBLE_CODE *trouble_code = trouble_codes;
-
-        while (S_OK == hr &&
-               trouble_code)
+        if (master_trouble_list[k].foundCount)
         {
-#ifdef WIN_PRINTF
-            hr = StringCchCatA(buf, bufSize, trouble_code->code);
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
-            if (S_OK == hr)
-            {
-#ifdef WIN_PRINTF
-                hr = StringCchCatA(buf, bufSize, " ");
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
-                if (S_OK == hr)
-                {
-                    if (trouble_code->description)
-                    {
-#ifdef WIN_PRINTF
-                        hr = StringCchCatA(buf, bufSize, trouble_code->description);
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
-                    }
-                    else
-                    {
-#ifdef WIN_PRINTF
-                        hr = StringCchCatA(buf, bufSize, "Not Found");
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
-                    }
-                    if (S_OK == hr)
-                    {
-#ifdef WIN_PRINTF
-                        hr = StringCchCatA(buf, bufSize, "\n");
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
-                    }
-                }
-            }
-            trouble_code = trouble_code->next;
+            numFound += master_trouble_list[k].foundCount;
+            nowLen = strlen(buf);
+            StringCchPrintf(buf + nowLen, bufSize - nowLen, "%s(%d) %s\n", master_trouble_list[k].code, master_trouble_list[k].foundCount, master_trouble_list[k].description);
         }
+        ++k;
     }
-    else
+    k = 0;
+    while (k < MAX_UNKNOWN_SIZE && unknownTCList[k].code)
     {
-#ifdef WIN_PRINTF
-        StringCchCopyA(buf, bufSize, "None\n");
-#else // WIN_PRINTF
-#endif // WIN_PRINTF
+        ++numFound;
+        nowLen = strlen(buf);
+        StringCchPrintf(buf + nowLen, bufSize - nowLen, "%s Not Found\n", unknownTCList[k].code);
+        ++k;
+    }
+    if (numFound == 0)
+    {
+        nowLen = strlen(buf);
+        StringCchPrintf(buf + nowLen, bufSize - nowLen, "None\n");
     }
 }
