@@ -1,0 +1,34 @@
+import SCons.Util
+
+Import("env")
+
+localEnv = env.Clone(tools = ["wdkuser","wdklink"])
+
+localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/DWIN_PRINTF'))
+localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/DLOG_COMMS'))
+localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/DWINDDK'))
+localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/DWIN32_LEAN_AND_MEAN=1'))
+localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/EHsc'))
+localEnv.AppendUnique(LINKFLAGS = SCons.Util.CLVar('/INCREMENTAL:NO'))
+
+localEnv["INC_PATHS"]["HERE"] = SCons.Util.CLVar(["#source"])
+
+localEnv.AppendUnique(CPPPATH = localEnv["INC_PATHS"]["HERE"])
+localEnv.AppendUnique(CPPPATH = SCons.Util.CLVar("/PROGRA~1/MICROS~2.0/VC/include/"))
+
+if localEnv["MODE"] != BUILD_MODE_RELEASE:
+    localEnv["PDB"] = "scantool.pdb"
+
+localEnv.AppendUnique(LIBS = [
+    "kernel32.lib",
+    "msvcrt.lib"])
+
+appfiles = Glob("*.c")
+appfiles.append(localEnv.RES("scantool.rc"))
+
+scantoolapp = localEnv.Program("ScanTool", appfiles)
+
+#Clean(app, Dir("."))
+cleanVariantPath(localEnv,scantoolapp)
+
+Default(scantoolapp)
