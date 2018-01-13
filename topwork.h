@@ -25,7 +25,7 @@ extern int stopWork;
 
 void getStoredDiagnosticCodes();
 void process_all_codes(char *simBuffer);
-void workInit(char *, size_t, int);
+void workInit(char *, size_t, int, char *, size_t , char *, size_t);
 #ifdef __cplusplus
    }
 #endif

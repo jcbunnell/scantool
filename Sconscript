@@ -4,7 +4,6 @@ Import("env")
 
 localEnv = env.Clone(tools = ["wdkuser","wdklink"])
 
-localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/DWIN_PRINTF'))
 localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/DLOG_COMMS'))
 localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/DWINDDK'))
 localEnv.AppendUnique(CCFLAGS = SCons.Util.CLVar('/DWIN32_LEAN_AND_MEAN=1'))
@@ -24,7 +23,6 @@ localEnv.AppendUnique(LIBS = [
     "msvcrt.lib"])
 
 appfiles = Glob("*.c")
-appfiles.append(localEnv.RES("scantool.rc"))
 
 scantoolapp = localEnv.Program("ScanTool", appfiles)
 

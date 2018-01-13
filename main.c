@@ -34,6 +34,8 @@
 
 int main(int argc, char *argv[])
 {
+    char vin[64];
+    char modelYear[8];
     char *fname = NULL;
     int index = 1;
     int comPortNumber=7;
@@ -143,7 +145,8 @@ int main(int argc, char *argv[])
     }
 
     printf("Starting with com port %d\n", comPortNumber);
-    workInit(simData, simSize, comPortNumber); // initialize everything
+    workInit(simData, simSize, comPortNumber, vin, sizeof(vin), modelYear, sizeof(modelYear)); // initialize everything
+    printf("Vehicle VIN: %s  Model year: %s\n", vin, modelYear);
 
     process_all_codes(simData);
 

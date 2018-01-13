@@ -1,5 +1,15 @@
 
-#include "stdlib.h"
+#ifdef WINDDK
+#include <windows.h>
+#include <windowsx.h>
+#include <intsafe.h>
+#include <strsafe.h>
+#endif // WINDDK
+#ifdef WIN_VS6
+#include <windows.h>
+#include <windowsx.h>
+#include "resource.h"
+#endif // WIN_VS6
 #include "trouble_code_reader.h"
 
 

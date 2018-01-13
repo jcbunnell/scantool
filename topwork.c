@@ -22,6 +22,12 @@
 #include <windows.h>
 #include <strsafe.h>
 #endif // WINDDK
+#ifdef WIN_VS6
+#include <windows.h>
+#endif // WIN_VS6
+#ifdef WIN_GUI
+#include "resource.h"
+#endif // WIN_GUI
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
@@ -36,7 +42,7 @@ COMPORT comport;
 #ifdef WIN_GUI
 HWND ghMainWnd = NULL;
 #endif // WIN_GUI
-int stopWork=0;
+int stopWork = 0;
 
 #ifdef LOG_COMMS
 char comm_log_file_name[20];
@@ -73,12 +79,11 @@ static char BCDToByte(char hi, char lo)
     return (hi << 4) + lo;
 }
 
-static long getVinInfo(char *simBuffer, size_t simBufSize)
+static long getVinInfo(char *simBuffer, size_t simBufSize, char *pVin, size_t vinSize, char *pYear, size_t yearSize)
 {
     int response;
     char cmdbuf[8];
     char inbuf[128];
-    char vin[64];
     char *ptr;
     char *next;
     char *vptr;
@@ -97,7 +102,7 @@ static long getVinInfo(char *simBuffer, size_t simBufSize)
     {
         response = DATA;
         ptr = simBuffer;
-        numBytes = (long) simBufSize;
+        numBytes = (long)simBufSize;
     }
     // this gets a little tricky
     // the format for this command returns a length in units
@@ -106,37 +111,21 @@ static long getVinInfo(char *simBuffer, size_t simBufSize)
     // 0: 49 02 01 31 44 33
     // 1: 48 56 31 33 54 30 39
     // 2: 53 37 31 38 30 35 37
-    memset(vin, 0, sizeof(vin));
-
-    if (DATA == response &&
-        numBytes)
+    if (pVin)
     {
-        // find the leading signature for the VIN return
-        next = strstr(ptr, "0:490201");
-        if (next)
+        memset(pVin, 0, vinSize);
+        if (DATA == response &&
+            numBytes)
         {
-            numBytes -= (long)(next - ptr);
-            ptr = next;
-            numBytes -= 8;
-            ptr += 8;
-            vptr = vin;
-            while (numBytes &&
-                   *ptr &&
-                   RECORD_DELIMITER != *ptr &&
-                   LINE_DELIMITER != *ptr)
-            {
-                *vptr = BCDToByte(ptr[0], ptr[1]);
-                ptr += 2;
-                numBytes -= 2;
-                ++vptr;
-            }
-            next = strstr(ptr, "1:");
+            // find the leading signature for the VIN return
+            next = strstr(ptr, "0:490201");
             if (next)
             {
                 numBytes -= (long)(next - ptr);
                 ptr = next;
-                ptr += 2;
-                numBytes -= 2;
+                numBytes -= 8;
+                ptr += 8;
+                vptr = pVin;
                 while (numBytes &&
                        *ptr &&
                        RECORD_DELIMITER != *ptr &&
@@ -147,13 +136,13 @@ static long getVinInfo(char *simBuffer, size_t simBufSize)
                     numBytes -= 2;
                     ++vptr;
                 }
-                next = strstr(ptr, "2:");
+                next = strstr(ptr, "1:");
                 if (next)
                 {
                     numBytes -= (long)(next - ptr);
                     ptr = next;
-                    numBytes -= 2;
                     ptr += 2;
+                    numBytes -= 2;
                     while (numBytes &&
                            *ptr &&
                            RECORD_DELIMITER != *ptr &&
@@ -164,14 +153,31 @@ static long getVinInfo(char *simBuffer, size_t simBufSize)
                         numBytes -= 2;
                         ++vptr;
                     }
+                    next = strstr(ptr, "2:");
+                    if (next)
+                    {
+                        numBytes -= (long)(next - ptr);
+                        ptr = next;
+                        numBytes -= 2;
+                        ptr += 2;
+                        while (numBytes &&
+                               *ptr &&
+                               RECORD_DELIMITER != *ptr &&
+                               LINE_DELIMITER != *ptr)
+                        {
+                            *vptr = BCDToByte(ptr[0], ptr[1]);
+                            ptr += 2;
+                            numBytes -= 2;
+                            ++vptr;
+                        }
+                    }
                 }
-            }
-        }   // end IF the VIN id string is found
-    }
+            }   // end IF the VIN id string is found
+        }
 
-    // assume the year is 1980-2009
-    switch (vin[9])
-    {
+        // assume the year is 1980-2009
+        switch (pVin[9])
+        {
         case 'A':
         case 'B':
         case 'C':
@@ -180,14 +186,14 @@ static long getVinInfo(char *simBuffer, size_t simBufSize)
         case 'F':
         case 'G':
         case 'H':
-            modelYear = 1980 + vin[9] - 'A';
+            modelYear = 1980 + pVin[9] - 'A';
             break;
         case 'J':
         case 'K':
         case 'L':
         case 'M':
         case 'N':
-            modelYear = 1988 + vin[9] - 'J';
+            modelYear = 1988 + pVin[9] - 'J';
             break;
         case 'P':
             modelYear = 1996;
@@ -195,13 +201,13 @@ static long getVinInfo(char *simBuffer, size_t simBufSize)
         case 'R':
         case 'S':
         case 'T':
-            modelYear = 1994 + vin[9] - 'R';
+            modelYear = 1994 + pVin[9] - 'R';
             break;
         case 'V':
         case 'W':
         case 'X':
         case 'Y':
-            modelYear = 1997 + vin[9] - 'V';
+            modelYear = 1997 + pVin[9] - 'V';
             break;
         case '1':
         case '2':
@@ -212,36 +218,39 @@ static long getVinInfo(char *simBuffer, size_t simBufSize)
         case '7':
         case '8':
         case '9':
-            modelYear = 2001 + vin[9] - '1';
+            modelYear = 2001 + pVin[9] - '1';
             break;
         default:
             modelYear = 1980;
             break;
+        }
+
+        if (isalpha(pVin[6]))
+        {
+            // make the adjustment to the new year range.
+            modelYear += 2010 - 1980;
+        }
     }
 
-    if (isalpha(vin[6]))
+    if (pYear)
     {
-        // make the adjustment to the new year range.
-        modelYear += 2010 - 1980;
+#ifdef WIN_VS6
+        sprintf(pYear, "%ld", modelYear);
+#else // WIN_VS6
+        StringCchPrintf(pYear, yearSize, "%ld", modelYear);
+#endif // WIN_VS6
     }
-    StringCchPrintf(inbuf, sizeof(inbuf), "%lu", modelYear);
 
-#ifdef WIN_GUI
-    SetDlgItemText(ghMainWnd, IDC_VEHICLEVINVALUE, vin);
-    SetDlgItemText(ghMainWnd, IDC_MODELYEARVALUE, inbuf);
-#else   /* WIN_GUI */
-    printf("Vehicle VIN: %s  Model year: %s\n", vin, inbuf);
-#endif  /* WIN_GUI */
     return numBytes;
 }
 
-void workInit(char *simBuffer, size_t simBufSize, int comPortNumber)
+void workInit(char *simBuffer, size_t simBufSize, int comPortNumber, char *pVin, size_t vinSize, char *pYear, size_t yearSize)
 {
     initializeUnknownList();
     if (simBuffer)
     {
         comport.status = READY;
-        simBufSize = compress_response(simBuffer, (long) simBufSize);
+        simBufSize = compress_response(simBuffer, (long)simBufSize);
     }
     else
     {
@@ -261,7 +270,7 @@ void workInit(char *simBuffer, size_t simBufSize, int comPortNumber)
 
     if (READY == comport.status)
     {
-        simBufSize = getVinInfo(simBuffer, simBufSize);
+        simBufSize = getVinInfo(simBuffer, simBufSize, pVin, vinSize, pYear, yearSize);
     }
     destroyUnknownList();
 }
@@ -285,7 +294,11 @@ void process_all_codes(char *simBuffer)
             do
             {
                 index = (bank * 0x20) + 1;    // set the index to the starting pid for that bank
-                StringCchPrintf(cmdbuf, sizeof(cmdbuf), "%02X%X0", MODE_CURRENT_DATA, bank*2);
+#ifdef WIN_VS6
+                sprintf(cmdbuf, "%02X%X0", MODE_CURRENT_DATA, bank * 2);
+#else // WIN_VS6
+                StringCchPrintf(cmdbuf, sizeof(cmdbuf), "%02X%X0", MODE_CURRENT_DATA, bank * 2);
+#endif // WIN_VS6
                 // generate current mode commands
                 response = sendAndWaitForResponse(inbuf, sizeof(inbuf), cmdbuf, &numBytes, CMD_TO_RESPONSE_SLEEP_MS);
                 if (DATA == response)
@@ -304,7 +317,11 @@ void process_all_codes(char *simBuffer)
                             if (codes & 0x80000000)
                             {
                                 // query each of the interfaces supported
-                                StringCchPrintf(cmdbuf, sizeof(cmdbuf), "%02X%02X", MODE_CURRENT_DATA, index);
+#ifdef WIN_VS6
+                                sprintf(cmdbuf, "%02X%02X", MODE_CURRENT_DATA, (int)index);
+#else // WIN_VS6
+                                StringCchPrintf(cmdbuf, sizeof(cmdbuf), "%02X%02X", MODE_CURRENT_DATA, (int)index);
+#endif // WIN_VS6
                                 response = sendAndWaitForResponse(inbuf, sizeof(inbuf), cmdbuf, &numBytes, CMD_TO_RESPONSE_SLEEP_MS);
                                 cmdbuf[0] = '4';  // replace command with response byte and find
                                 ptr = strstr(inbuf, cmdbuf);
@@ -317,12 +334,12 @@ void process_all_codes(char *simBuffer)
                                     }
                                     else
                                     {
-                                        printf("PID %02X reported and not handled\n", (int) index);
+                                        printf("PID %02X reported and not handled\n", (int)index);
                                     }
                                 }
                                 else
                                 {
-                                    printf("Hmmm. PID %02X reported as supported, but no response to query\n", (int) index);
+                                    printf("Hmmm. PID %02X reported as supported, but no response to query\n", (int)index);
                                 }
                             }
                             ++index;        // account for numeric index
@@ -344,12 +361,16 @@ void process_all_codes(char *simBuffer)
         // simulated data is being used.
         // that means we scan for return values and then pump them into the display routines
         int codeIndex;
-        for (codeIndex=1;codeIndex < 0x7F; ++codeIndex)
+        for (codeIndex = 1; codeIndex < 0x7F; ++codeIndex)
         {
             /* do not process the indices reports */
             if (codeIndex != 0x20 && codeIndex != 0x40)
             {
+#ifdef WIN_VS6
+                sprintf(cmdbuf, "41%02X", codeIndex);
+#else // WIN_VS6
                 StringCchPrintf(cmdbuf, sizeof(cmdbuf), "41%02X", codeIndex);
+#endif // WIN_VS6
                 ptr = strstr(simBuffer, cmdbuf);
                 if (ptr)
                 {

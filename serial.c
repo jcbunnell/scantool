@@ -4,6 +4,9 @@
 #include <strsafe.h>
 #include <intsafe.h>
 #endif // WINDDK
+#ifdef WIN_VS6
+#include <windows.h>
+#endif // WIN_VS6
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -12,7 +15,7 @@
 #include "topwork.h"
 
 extern COMPORT comport;
-int CommHandle;
+HANDLE CommHandle;
 int serial_time_out;
 
 int open_comport()
@@ -26,8 +29,12 @@ int open_comport()
       close_comport();    // close it
    }
 
+#ifdef WIN_VS6
+   sprintf(temp_str, "COM%i", comport.number);
+#else // WIN_VS6
    StringCchPrintf(temp_str, sizeof(temp_str), "COM%i", comport.number);
-   CommHandle = open(temp_str, O_RDWR);
+#endif // WIN_VS6
+   CommHandle = CreateFile(temp_str, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
    if (CommHandle == INVALID_HANDLE_VALUE)
    {
       printf("Unable to open %s\n", temp_str);
@@ -82,7 +89,11 @@ void send_command(const char *command)
    char tx_buf[32];
    DWORD bytes_written;
 
+#ifdef WIN_VS6
+   sprintf(tx_buf, "%s\r", command);  // Append CR to the command
+#else // WIN_VS6
    StringCchPrintf(tx_buf, sizeof(tx_buf), "%s\r", command);  // Append CR to the command
+#endif // WIN_VS6
 
 #ifdef LOG_COMMS
    write_comm_log("TX", tx_buf);

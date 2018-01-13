@@ -9,14 +9,18 @@
 #define IMPERIAL    1
 
 #ifndef WINDDK
+#ifdef WIN_VS6
+//#include <winbase.h>
+#else // WIN_VS6
 #include <unistd.h>
 #define HANDLE  int
 #define DWORD   long
 #define Sleep(x)   sleep((x)*1000)
+#endif // WIN_VS6
 #endif // WINDDK
 
 #ifndef StringCchPrintf
-#define StringCchPrintf snprintf
+#define StringCchPrintf    snprintf
 #endif // StringCchPrintf
 
 #ifndef StringCchCopy

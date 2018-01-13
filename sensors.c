@@ -5,10 +5,17 @@
 #include <intsafe.h>
 #include <strsafe.h>
 #endif // WINDDK
+#ifdef WIN_VS6
+#include <windows.h>
+#include <windowsx.h>
+#include "resource.h"
+#endif // WIN_VS6
+#ifdef WIN_GUI
+#include <commctrl.h>
+#endif // WIN_GUI
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-//#include <commctrl.h>
 #include "globals.h"
 #include "topwork.h"
 #include "serial.h"
@@ -168,7 +175,11 @@ int codeIsDisplayed(unsigned long index)
 {
     int rc = 0;
     char hexValue[16];
+#ifdef WIN_VS6
+    sprintf(hexValue, "%02X", (int) index);
+#else // WIN_VS6
     StringCchPrintf(hexValue, sizeof(hexValue), "%02X", (int) index);
+#endif // WIN_VS6
 
     index = 0;
     // until we get a stop work order or run out of pids in the list
@@ -177,7 +188,11 @@ int codeIsDisplayed(unsigned long index)
         // check to see if the pids match
         if (0 == strncmp(hexValue, sensors[index].pid, PID_SIZE))
         {
-            if (sensors[index].idc_value && sensors[index].formula)
+            if (
+#ifdef WIN_VS6
+                sensors[index].idc_value &&
+#endif // WIN_VS6
+                sensors[index].formula)
             {
                 rc = 1;
                 break;
@@ -330,8 +345,11 @@ void process_trouble_codes(int data, char *buf, size_t bufSize)
     }
 
     codeCount = (data >> 24) & 0x7F;
-    StringCchPrintf(buf, bufSize, "%d : MIL=%s\n",
-                    codeCount, lightOn ? "On" : "Off");
+#ifdef WIN_VS6
+    sprintf(buf, "%d : MIL=%s\n", codeCount, lightOn ? "On" : "Off");
+#else // WIN_VS6
+    StringCchPrintf(buf, bufSize, "%d : MIL=%s\n", codeCount, lightOn ? "On" : "Off");
+#endif // WIN_VS6
 
     for (k=0; k<codeCount && (0 == stopWork);)
     {
@@ -339,7 +357,11 @@ void process_trouble_codes(int data, char *buf, size_t bufSize)
         {
             char inbuf[128];
             char cmdbuf[16];
+#ifdef WIN_VS6
+            sprintf(cmdbuf, "%02X", MODE_STORED_DIAG_TROUBLE_CODES);
+#else // WIN_VS6
             StringCchPrintf(cmdbuf, sizeof(cmdbuf), "%02X", MODE_STORED_DIAG_TROUBLE_CODES);
+#endif // WIN_VS6
             response = sendAndWaitForResponse(inbuf, sizeof(inbuf), cmdbuf, &numBytes, CMD_TO_RESPONSE_SLEEP_MS);
             if (DATA == response)
             {
@@ -368,7 +390,11 @@ void getStoredDiagnosticCodes()
     int response;
     char inbuf[1024];
     char cmdbuf[16];
+#ifdef WIN_VS6
+    sprintf(cmdbuf, "%02X", MODE_STORED_DIAG_TROUBLE_CODES);
+#else // WIN_VS6
     StringCchPrintf(cmdbuf, sizeof(cmdbuf), "%02X", MODE_STORED_DIAG_TROUBLE_CODES);
+#endif // WIN_VS6
     response = sendAndWaitForResponse(inbuf, sizeof(inbuf), cmdbuf, &numBytes, CMD_TO_RESPONSE_SLEEP_MS);
     if (DATA == response)
     {
@@ -380,18 +406,30 @@ void engine_rpm_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i r/min", data/4);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i r/min", data/4);
+#endif // WIN_VS6
     }
     else   // if the system is IMPERIAL
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i rpm", data/4);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i rpm", data/4);
+#endif // WIN_VS6
     }
 }
 
 
 void engine_load_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data*100/255);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data*100/255);
+#endif // WIN_VS6
 }
 
 
@@ -399,11 +437,19 @@ void coolant_temp_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i%c C", data-40, 0xB0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i%c C", data-40, 0xB0);
+#endif // WIN_VS6
     }
     else   // if the system is IMPERIAL
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i%c F", (int)(((float)data-40.0)*9.0/5.0 + 32.0), 0xB0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i%c F", (int)(((float)data-40.0)*9.0/5.0 + 32.0), 0xB0);
+#endif // WIN_VS6
     }
 }
 
@@ -436,7 +482,11 @@ void fuel_system_status_formula(int data, char *buf, size_t bufSize)
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "unknown: 0x%02X", data);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "unknown: 0x%02X", data);
+#endif // WIN_VS6
     }
 }
 
@@ -457,11 +507,19 @@ void vehicle_speed_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i km/h", data);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i km/h", data);
+#endif // WIN_VS6
     }
     else   // if the system is IMPERIAL
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i mph", (int)((float)data/1.609));
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i mph", (int)((float)data/1.609));
+#endif // WIN_VS6
     }
 }
 
@@ -470,18 +528,30 @@ void intake_pressure_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i kPa", data);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i kPa", data);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.1f inHg", (float)data/3.386389);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.1f inHg", (float)data/3.386389);
+#endif // WIN_VS6
     }
 }
 
 
 void timing_advance_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%c", ((float)data-128.0)/2.0, 0xB0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%c", ((float)data-128.0)/2.0, 0xB0);
+#endif // WIN_VS6
 }
 
 
@@ -489,11 +559,19 @@ void intake_air_temp_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i%c C", data-40, 0xB0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i%c C", data-40, 0xB0);
+#endif // WIN_VS6
     }
     else   // if the system is IMPERIAL
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i%c F", (int)(((float)data-40.0)*9.0/5.0 + 32.0), 0xB0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i%c F", (int)(((float)data-40.0)*9.0/5.0 + 32.0), 0xB0);
+#endif // WIN_VS6
     }
 }
 
@@ -502,18 +580,30 @@ void air_flow_rate_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.2f g/s", data*0.01);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.2f g/s", data*0.01);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.1f lb/min", data*0.0013227736);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.1f lb/min", data*0.0013227736);
+#endif // WIN_VS6
     }
 }
 
 
 void throttle_position_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data*100.0/255.0);
+#endif // WIN_VS6
 }
 
 
@@ -524,11 +614,19 @@ void fuel_pressure_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i kPa", data*3);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i kPa", data*3);
+#endif // WIN_VS6
     }
     else   // if the system is IMPERIAL
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.1f psi", (float)data*3.0*0.145037738);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.1f psi", (float)data*3.0*0.145037738);
+#endif // WIN_VS6
     }
 }
 
@@ -541,7 +639,11 @@ void short_term_fuel_trim_formula(int data, char *buf, size_t bufSize)
         data >>= 8;
     }
 
+#ifdef WIN_VS6
+    sprintf(buf, (data == 128) ? "0.0%%" : "%+.1f%%", ((float)data - 128.0)*100.0/128.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, (data == 128) ? "0.0%%" : "%+.1f%%", ((float)data - 128.0)*100.0/128.0);
+#endif // WIN_VS6
 }
 
 
@@ -552,7 +654,11 @@ void long_term_fuel_trim_formula(int data, char *buf, size_t bufSize)
         data >>= 8;
     }
 
+#ifdef WIN_VS6
+    sprintf(buf, (data == 128) ? "0.0%%" : "%+.1f%%", ((float)data - 128.0)*100.0/128.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, (data == 128) ? "0.0%%" : "%+.1f%%", ((float)data - 128.0)*100.0/128.0);
+#endif // WIN_VS6
 }
 
 
@@ -586,11 +692,19 @@ void o2_sensor_formula(int data, char *buf, size_t bufSize)
 {
     if ((data & 0xFF) == 0xFF)  // if the sensor is not used in fuel trim calculation,
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.3f V", (data >> 8)*0.005);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.3f V", (data >> 8)*0.005);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, ((data & 0xFF) == 128) ? "%.3f V @ 0.0%% s.t. fuel trim" : "%.3f V @ %+.1f%% s.t. fuel trim", (data >> 8)*0.005, ((float)(data & 0xFF) - 128.0)*100.0/128.0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, ((data & 0xFF) == 128) ? "%.3f V @ 0.0%% s.t. fuel trim" : "%.3f V @ %+.1f%% s.t. fuel trim", (data >> 8)*0.005, ((float)(data & 0xFF) - 128.0)*100.0/128.0);
+#endif // WIN_VS6
     }
 }
 
@@ -653,7 +767,11 @@ void obd_requirements_formula(int data, char *buf, size_t bufSize)
         StringCchCopy(buf, bufSize, "JOBD, EOBD, and OBD-II");
         break;
     default:
+#ifdef WIN_VS6
+        sprintf(buf, "Unknown: 0x%02X", data);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "Unknown: 0x%02X", data);
+#endif // WIN_VS6
     }
 }
 
@@ -667,7 +785,11 @@ void engine_run_time_formula(int data, char *buf, size_t bufSize)
     min = (data % 3600) / 60;  // get minutes
     sec = data % 60;  // get seconds
 
+#ifdef WIN_VS6
+    sprintf(buf, "%02i:%02i:%02i", hrs, min, sec);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%02i:%02i:%02i", hrs, min, sec);
+#endif // WIN_VS6
 }
 
 
@@ -675,11 +797,19 @@ void mil_distance_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i km", data);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i km", data);
+#endif // WIN_VS6
     }
     else   // if the system is IMPERIAL
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i miles", (int)((float)data/1.609));
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i miles", (int)((float)data/1.609));
+#endif // WIN_VS6
     }
 }
 
@@ -693,11 +823,19 @@ void frp_relative_formula(int data, char *buf, size_t bufSize)
 
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.3f kPa", kpa);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.3f kPa", kpa);
+#endif // WIN_VS6
     }
     else   // if the system is IMPERIAL
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.1f PSI", psi);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.1f PSI", psi);
+#endif // WIN_VS6
     }
 }
 
@@ -712,11 +850,19 @@ void frp_widerange_formula(int data, char *buf, size_t bufSize)
 
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i kPa", kpa);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i kPa", kpa);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.1f PSI", psi);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.1f PSI", psi);
+#endif // WIN_VS6
     }
 }
 
@@ -728,38 +874,62 @@ void o2_sensor_wrv_formula(int data, char *buf, size_t bufSize)
     eq_ratio = (float)(data >> 16)*(float)0.0000305;  // data bytes A,B
     o2_voltage = (float)(data & 0xFFFF)*(float)0.000122; // data bytes C,D
 
+#ifdef WIN_VS6
+    sprintf(buf, "%.3f V, Eq. ratio: %.3f", o2_voltage, eq_ratio);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.3f V, Eq. ratio: %.3f", o2_voltage, eq_ratio);
+#endif // WIN_VS6
 }
 
 
 //Commanded EGR status: PID 2C
 void commanded_egr_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data*100.0/255.0);
+#endif // WIN_VS6
 }
 
 //EGR error: PID 2D
 void egr_error_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, (data == 128) ? "0.0%%" : "%+.1f%%", (float)(data-128)/255.0*100.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, (data == 128) ? "0.0%%" : "%+.1f%%", (float)(data-128)/255.0*100.0);
+#endif // WIN_VS6
 }
 
 
 void evap_pct_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data/255.0*100.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data/255.0*100.0);
+#endif // WIN_VS6
 }
 
 
 void fuel_level_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data/255.0*100.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data/255.0*100.0);
+#endif // WIN_VS6
 }
 
 
 void warm_ups_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%i", data);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%i", data);
+#endif // WIN_VS6
 }
 
 
@@ -767,11 +937,19 @@ void clr_distance_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i km", data);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i km", data);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i miles", (int)((float)data/1.609));
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i miles", (int)((float)data/1.609));
+#endif // WIN_VS6
     }
 }
 
@@ -780,11 +958,19 @@ void evap_vp_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.2f Pa", (float)data*0.25);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.2f Pa", (float)data*0.25);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.3f in H2O", (float)data*0.25/249.088908);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.3f in H2O", (float)data*0.25/249.088908);
+#endif // WIN_VS6
     }
 }
 
@@ -793,11 +979,19 @@ void baro_pressure_formula(int data, char *buf, size_t bufSize)
 {
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i kPa", data);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i kPa", data);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.1f inHg", (float)data*0.2953);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.1f inHg", (float)data*0.2953);
+#endif // WIN_VS6
     }
 }
 
@@ -809,7 +1003,11 @@ void o2_sensor_wrc_formula(int data, char *buf, size_t bufSize)
     eq_ratio = (float)(data >> 16)*(float)0.0000305;  // data bytes A,B
     o2_ma = ((float)(data & 0xFFFF) - 0x8000)*(float)0.00390625; // data bytes C,D
 
+#ifdef WIN_VS6
+    sprintf(buf, "%.3f mA, Eq. ratio: %.3f", o2_ma, eq_ratio);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.3f mA, Eq. ratio: %.3f", o2_ma, eq_ratio);
+#endif // WIN_VS6
 }
 
 
@@ -822,36 +1020,60 @@ void cat_temp_formula(int data, char *buf, size_t bufSize)
 
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.1f%c C", c, 0xB0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.1f%c C", c, 0xB0);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%.1f%c F", f, 0xB0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%.1f%c F", f, 0xB0);
+#endif // WIN_VS6
     }
 }
 
 
 void ecu_voltage_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.3f V", (float)data*0.001);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.3f V", (float)data*0.001);
+#endif // WIN_VS6
 }
 
 
 void abs_load_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data*100/255);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data*100/255);
+#endif // WIN_VS6
 }
 
 
 void eq_ratio_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.3f", (float)data*0.0000305);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.3f", (float)data*0.0000305);
+#endif // WIN_VS6
 }
 
 
 void relative_tp_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data*100.0/255.0);
+#endif // WIN_VS6
 }
 
 
@@ -864,34 +1086,58 @@ void amb_air_temp_formula(int data, char *buf, size_t bufSize)
 
     if (system_of_measurements == METRIC)
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i%c C", c, 0xB0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i%c C", c, 0xB0);
+#endif // WIN_VS6
     }
     else
     {
+#ifdef WIN_VS6
+        sprintf(buf, "%i%c F", f, 0xB0);
+#else // WIN_VS6
         StringCchPrintf(buf, bufSize, "%i%c F", f, 0xB0);
+#endif // WIN_VS6
     }
 }
 
 
 void abs_tp_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data*100.0/255.0);
+#endif // WIN_VS6
 }
 
 
 void tac_pct_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%.1f%%", (float)data*100.0/255.0);
+#endif // WIN_VS6
 }
 
 
 void mil_time_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%i hrs %i min", data/60, data%60);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%i hrs %i min", data/60, data%60);
+#endif // WIN_VS6
 }
 
 
 void clr_time_formula(int data, char *buf, size_t bufSize)
 {
+#ifdef WIN_VS6
+    sprintf(buf, "%i hrs %i min", data/60, data%60);
+#else // WIN_VS6
     StringCchPrintf(buf, bufSize, "%i hrs %i min", data/60, data%60);
+#endif // WIN_VS6
 }

@@ -2,6 +2,9 @@
 #include <windows.h>
 #include <strsafe.h>
 #endif // WINDDK
+#ifdef WIN_VS6
+#include <windows.h>
+#endif // WIN_VS6
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
@@ -195,7 +198,6 @@ int handle_read_codes(char *vehicle_response, int pending)
     int max_len;
     int trim;
     int i;
-    int j;
 
     // First, look for non-CAN and single-message CAN responses
     StringCchCopy(filter, sizeof(filter), (pending) ? "47" : "43");
@@ -227,9 +229,13 @@ int handle_read_codes(char *vehicle_response, int pending)
 
     for (i = 0; i < can_msg_cnt; i++)
     {
-        j = 0;
+        int j = 0;
         start = vehicle_response;
+#ifdef WIN_VS6
+        sprintf(filter, "%X:", i);
+#else // WIN_VS6
         StringCchPrintf(filter, sizeof(filter), "%X:", i);
+#endif // WIN_VS6
         while (find_valid_response(msg, start, filter, &start))
         {
             for (; j < can_resp_cnt; j++)  // find next response that is not full
@@ -242,7 +248,11 @@ int handle_read_codes(char *vehicle_response, int pending)
                     // first response -- 6 bytes total, all other -- 7 bytes
                     // if this is last message for a response, trim padding
                     trim = (buf_len + (int)strlen(msg) - 2 >= max_len) ? buf_len + (int)strlen(msg) - 2 - max_len : 0;
+#ifdef WIN_VS6
+                    strcat(can_resp_buf[j], msg + ((i == 0) ? 6 : 2));
+#else // WIN_VS6
                     StringCchCatN(can_resp_buf[j], max_len, msg + ((i == 0) ? 6 : 2), (i == 0) ? 8 : 14 - trim);
+#endif // WIN_VS6
                     j++;
                     break;
                 }
@@ -390,7 +400,11 @@ void printTroubleCodes(char *buf, size_t bufSize)
         {
             numFound += master_trouble_list[k].foundCount;
             nowLen = strlen(buf);
+#ifdef WIN_VS6
+            sprintf(buf + nowLen, "%s(%d) %s\n", master_trouble_list[k].code, master_trouble_list[k].foundCount, master_trouble_list[k].description);
+#else // WIN_VS6
             StringCchPrintf(buf + nowLen, bufSize - nowLen, "%s(%d) %s\n", master_trouble_list[k].code, master_trouble_list[k].foundCount, master_trouble_list[k].description);
+#endif // WIN_VS6
         }
         ++k;
     }
@@ -399,12 +413,20 @@ void printTroubleCodes(char *buf, size_t bufSize)
     {
         ++numFound;
         nowLen = strlen(buf);
+#ifdef WIN_VS6
+        sprintf(buf + nowLen, "%s Not Found\n", unknownTCList[k].code);
+#else // WIN_VS6
         StringCchPrintf(buf + nowLen, bufSize - nowLen, "%s Not Found\n", unknownTCList[k].code);
+#endif // WIN_VS6
         ++k;
     }
     if (numFound == 0)
     {
         nowLen = strlen(buf);
+#ifdef WIN_VS6
+        sprintf(buf + nowLen, "None\n");
+#else // WIN_VS6
         StringCchPrintf(buf + nowLen, bufSize - nowLen, "None\n");
+#endif // WIN_VS6
     }
 }
