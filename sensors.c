@@ -31,7 +31,7 @@ typedef struct
     int bIsListBox;
     int bIsProgressBar;
     int max_data_value;
-    void (*formula)(int raw_data, char *buf, size_t bufSize);
+    void (*formula)(int raw_data, char *buf, unsigned long bufSize);
     char label[32];
     char screen_buf[64];
     int enabled;
@@ -39,50 +39,49 @@ typedef struct
 } SENSOR;
 
 // Sensor formulae:
-static void throttle_position_formula(int data, char *buf, size_t bufSize); // Page 1
-static void engine_rpm_formula(int data, char *buf, size_t bufSize);
-static void vehicle_speed_formula(int data, char *buf, size_t bufSize);
-static void engine_load_formula(int data, char *buf, size_t bufSize);
-static void timing_advance_formula(int data, char *buf, size_t bufSize);
-static void intake_pressure_formula(int data, char *buf, size_t bufSize);
-static void air_flow_rate_formula(int data, char *buf, size_t bufSize);
-static void fuel_system1_status_formula(int data, char *buf, size_t bufSize);
-static void fuel_system2_status_formula(int data, char *buf, size_t bufSize);
-static void short_term_fuel_trim_formula(int data, char *buf, size_t bufSize); // Page 2
-static void long_term_fuel_trim_formula(int data, char *buf, size_t bufSize);
-static void intake_air_temp_formula(int data, char *buf, size_t bufSize);
-static void coolant_temp_formula(int data, char *buf, size_t bufSize);
-static void fuel_pressure_formula(int data, char *buf, size_t bufSize);
-static void secondary_air_status_formula(int data, char *buf, size_t bufSize);
-static void pto_status_formula(int data, char *buf, size_t bufSize);
-static void o2_sensor_formula(int data, char *buf, size_t bufSize);
-void obd_requirements_formula(int data, char *buf, size_t bufSize);
+static void engine_rpm_formula(int data, char *buf, unsigned long bufSize);
+static void vehicle_speed_formula(int data, char *buf, unsigned long bufSize);
+static void engine_load_formula(int data, char *buf, unsigned long bufSize);
+static void timing_advance_formula(int data, char *buf, unsigned long bufSize);
+static void intake_pressure_formula(int data, char *buf, unsigned long bufSize);
+static void air_flow_rate_formula(int data, char *buf, unsigned long bufSize);
+static void fuel_system1_status_formula(int data, char *buf, unsigned long bufSize);
+static void fuel_system2_status_formula(int data, char *buf, unsigned long bufSize);
+static void short_term_fuel_trim_formula(int data, char *buf, unsigned long bufSize); // Page 2
+static void long_term_fuel_trim_formula(int data, char *buf, unsigned long bufSize);
+static void intake_air_temp_formula(int data, char *buf, unsigned long bufSize);
+static void coolant_temp_formula(int data, char *buf, unsigned long bufSize);
+static void fuel_pressure_formula(int data, char *buf, unsigned long bufSize);
+static void secondary_air_status_formula(int data, char *buf, unsigned long bufSize);
+static void pto_status_formula(int data, char *buf, unsigned long bufSize);
+static void o2_sensor_formula(int data, char *buf, unsigned long bufSize);
+void obd_requirements_formula(int data, char *buf, unsigned long bufSize);
 // added 1/2/2003
-static void engine_run_time_formula(int data, char *buf, size_t bufSize);
-static void mil_distance_formula(int data, char *buf, size_t bufSize);
-static void frp_relative_formula(int data, char *buf, size_t bufSize);
-static void frp_widerange_formula(int data, char *buf, size_t bufSize);
-static void o2_sensor_wrv_formula(int data, char *buf, size_t bufSize);
-static void commanded_egr_formula(int data, char *buf, size_t bufSize);
-static void egr_error_formula(int data, char *buf, size_t bufSize);
-static void evap_pct_formula(int data, char *buf, size_t bufSize);
-static void fuel_level_formula(int data, char *buf, size_t bufSize);
-static void warm_ups_formula(int data, char *buf, size_t bufSize);
-static void clr_distance_formula(int data, char *buf, size_t bufSize);
-static void evap_vp_formula(int data, char *buf, size_t bufSize);
-static void baro_pressure_formula(int data, char *buf, size_t bufSize);
-static void o2_sensor_wrc_formula(int data, char *buf, size_t bufSize);
-static void cat_temp_formula(int data, char *buf, size_t bufSize);
-static void ecu_voltage_formula(int data, char *buf, size_t bufSize);
-static void abs_load_formula(int data, char *buf, size_t bufSize);
-static void eq_ratio_formula(int data, char *buf, size_t bufSize);
-static void relative_tp_formula(int data, char *buf, size_t bufSize);
-static void amb_air_temp_formula(int data, char *buf, size_t bufSize);
-static void abs_tp_formula(int data, char *buf, size_t bufSize);
-static void tac_pct_formula(int data, char *buf, size_t bufSize);
-static void mil_time_formula(int data, char *buf, size_t bufSize);
-static void clr_time_formula(int data, char *buf, size_t bufSize);
-static void process_trouble_codes(int data, char *buf, size_t bufSize);
+static void engine_run_time_formula(int data, char *buf, unsigned long bufSize);
+static void mil_distance_formula(int data, char *buf, unsigned long bufSize);
+static void frp_relative_formula(int data, char *buf, unsigned long bufSize);
+static void frp_widerange_formula(int data, char *buf, unsigned long bufSize);
+static void o2_sensor_wrv_formula(int data, char *buf, unsigned long bufSize);
+static void commanded_egr_formula(int data, char *buf, unsigned long bufSize);
+static void egr_error_formula(int data, char *buf, unsigned long bufSize);
+static void evap_pct_formula(int data, char *buf, unsigned long bufSize);
+static void fuel_level_formula(int data, char *buf, unsigned long bufSize);
+static void warm_ups_formula(int data, char *buf, unsigned long bufSize);
+static void clr_distance_formula(int data, char *buf, unsigned long bufSize);
+static void evap_vp_formula(int data, char *buf, unsigned long bufSize);
+static void baro_pressure_formula(int data, char *buf, unsigned long bufSize);
+static void o2_sensor_wrc_formula(int data, char *buf, unsigned long bufSize);
+static void cat_temp_formula(int data, char *buf, unsigned long bufSize);
+static void ecu_voltage_formula(int data, char *buf, unsigned long bufSize);
+static void abs_load_formula(int data, char *buf, unsigned long bufSize);
+static void eq_ratio_formula(int data, char *buf, unsigned long bufSize);
+static void relative_tp_formula(int data, char *buf, unsigned long bufSize);
+static void amb_air_temp_formula(int data, char *buf, unsigned long bufSize);
+static void abs_tp_formula(int data, char *buf, unsigned long bufSize);
+static void tac_pct_formula(int data, char *buf, unsigned long bufSize);
+static void mil_time_formula(int data, char *buf, unsigned long bufSize);
+static void clr_time_formula(int data, char *buf, unsigned long bufSize);
+static void process_trouble_codes(int data, char *buf, unsigned long bufSize);
 
 static SENSOR sensors[] =
 {
@@ -309,7 +308,7 @@ void process_and_display_data(char *buf, char *simBuffer)
 
 // the data value of the trouble code read
 // buf and bufSize are for the output buffer
-void process_trouble_codes(int data, char *buf, size_t bufSize)
+void process_trouble_codes(int data, char *buf, unsigned long bufSize)
 {
     // the first byte is the trouble code count and the high bit is the MIL status light indicator
     // the remaining 3 bytes are tests available and tests incomplete
@@ -402,7 +401,7 @@ void getStoredDiagnosticCodes()
     }
 }
 
-void engine_rpm_formula(int data, char *buf, size_t bufSize)
+void engine_rpm_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -423,7 +422,7 @@ void engine_rpm_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void engine_load_formula(int data, char *buf, size_t bufSize)
+void engine_load_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%%", (float)data*100/255);
@@ -433,7 +432,7 @@ void engine_load_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void coolant_temp_formula(int data, char *buf, size_t bufSize)
+void coolant_temp_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -454,7 +453,7 @@ void coolant_temp_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void fuel_system_status_formula(int data, char *buf, size_t bufSize)
+void fuel_system_status_formula(int data, char *buf, unsigned long bufSize)
 {
     if (data == 0)
     {
@@ -491,19 +490,19 @@ void fuel_system_status_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void fuel_system1_status_formula(int data, char *buf, size_t bufSize)
+void fuel_system1_status_formula(int data, char *buf, unsigned long bufSize)
 {
     fuel_system_status_formula((data >> 8) & 0xFF, buf, bufSize);  // Fuel System 1 status: Data A
 }
 
 
-void fuel_system2_status_formula(int data, char *buf, size_t bufSize)
+void fuel_system2_status_formula(int data, char *buf, unsigned long bufSize)
 {
     fuel_system_status_formula(data & 0xFF, buf, bufSize);  // Fuel System 2 status: Data B
 }
 
 
-void vehicle_speed_formula(int data, char *buf, size_t bufSize)
+void vehicle_speed_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -524,7 +523,7 @@ void vehicle_speed_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void intake_pressure_formula(int data, char *buf, size_t bufSize)
+void intake_pressure_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -545,7 +544,7 @@ void intake_pressure_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void timing_advance_formula(int data, char *buf, size_t bufSize)
+void timing_advance_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%c", ((float)data-128.0)/2.0, 0xB0);
@@ -555,7 +554,7 @@ void timing_advance_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void intake_air_temp_formula(int data, char *buf, size_t bufSize)
+void intake_air_temp_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -576,7 +575,7 @@ void intake_air_temp_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void air_flow_rate_formula(int data, char *buf, size_t bufSize)
+void air_flow_rate_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -597,20 +596,10 @@ void air_flow_rate_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void throttle_position_formula(int data, char *buf, size_t bufSize)
-{
-#ifdef WIN_VS6
-    sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
-#else // WIN_VS6
-    StringCchPrintf(buf, bufSize, "%.1f%%", (float)data*100.0/255.0);
-#endif // WIN_VS6
-}
-
-
 // **** New formulae added 3/11/2003: ****
 
 // Fuel Pressure (guage): PID 0A
-void fuel_pressure_formula(int data, char *buf, size_t bufSize)
+void fuel_pressure_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -632,7 +621,7 @@ void fuel_pressure_formula(int data, char *buf, size_t bufSize)
 
 
 // Fuel Trim statuses: PID 06-09
-void short_term_fuel_trim_formula(int data, char *buf, size_t bufSize)
+void short_term_fuel_trim_formula(int data, char *buf, unsigned long bufSize)
 {
     if (data > 0xFF)  // we're only showing bank 1 and 2 FT
     {
@@ -647,7 +636,7 @@ void short_term_fuel_trim_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void long_term_fuel_trim_formula(int data, char *buf, size_t bufSize)
+void long_term_fuel_trim_formula(int data, char *buf, unsigned long bufSize)
 {
     if (data > 0xFF)  // we're only showing bank 1 and 2 FT
     {
@@ -663,7 +652,7 @@ void long_term_fuel_trim_formula(int data, char *buf, size_t bufSize)
 
 
 // Commanded secondary air status: PID 12
-void secondary_air_status_formula(int data, char *buf, size_t bufSize)
+void secondary_air_status_formula(int data, char *buf, unsigned long bufSize)
 {
     data = data & 0x0700; // mask bits 0, 1, and 2
 
@@ -688,7 +677,7 @@ void secondary_air_status_formula(int data, char *buf, size_t bufSize)
 // Oxygen sensor voltages & short term fuel trims: PID 14-1B
 // Format is bankX_sensor
 
-void o2_sensor_formula(int data, char *buf, size_t bufSize)
+void o2_sensor_formula(int data, char *buf, unsigned long bufSize)
 {
     if ((data & 0xFF) == 0xFF)  // if the sensor is not used in fuel trim calculation,
     {
@@ -710,7 +699,7 @@ void o2_sensor_formula(int data, char *buf, size_t bufSize)
 
 
 //Power Take-Off Status: PID 1E
-void pto_status_formula(int data, char *buf, size_t bufSize)
+void pto_status_formula(int data, char *buf, unsigned long bufSize)
 {
     if ((data & 0x01) == 0x01)
     {
@@ -723,7 +712,7 @@ void pto_status_formula(int data, char *buf, size_t bufSize)
 }
 
 // OBD requirement to which vehicle is designed: PID 1C
-void obd_requirements_formula(int data, char *buf, size_t bufSize)
+void obd_requirements_formula(int data, char *buf, unsigned long bufSize)
 {
     switch (data)
     {
@@ -777,7 +766,7 @@ void obd_requirements_formula(int data, char *buf, size_t bufSize)
 
 /* Sensors added 1/2/2003: */
 
-void engine_run_time_formula(int data, char *buf, size_t bufSize)
+void engine_run_time_formula(int data, char *buf, unsigned long bufSize)
 {
     int sec, min, hrs;
 
@@ -793,7 +782,7 @@ void engine_run_time_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void mil_distance_formula(int data, char *buf, size_t bufSize)
+void mil_distance_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -814,7 +803,7 @@ void mil_distance_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void frp_relative_formula(int data, char *buf, size_t bufSize)
+void frp_relative_formula(int data, char *buf, unsigned long bufSize)
 {
     float kpa, psi;
 
@@ -840,7 +829,7 @@ void frp_relative_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void frp_widerange_formula(int data, char *buf, size_t bufSize)
+void frp_widerange_formula(int data, char *buf, unsigned long bufSize)
 {
     int kpa;
     float psi;
@@ -867,7 +856,7 @@ void frp_widerange_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void o2_sensor_wrv_formula(int data, char *buf, size_t bufSize)
+void o2_sensor_wrv_formula(int data, char *buf, unsigned long bufSize)
 {
     float eq_ratio, o2_voltage; // equivalence ratio and sensor voltage
 
@@ -883,7 +872,7 @@ void o2_sensor_wrv_formula(int data, char *buf, size_t bufSize)
 
 
 //Commanded EGR status: PID 2C
-void commanded_egr_formula(int data, char *buf, size_t bufSize)
+void commanded_egr_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
@@ -893,7 +882,7 @@ void commanded_egr_formula(int data, char *buf, size_t bufSize)
 }
 
 //EGR error: PID 2D
-void egr_error_formula(int data, char *buf, size_t bufSize)
+void egr_error_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, (data == 128) ? "0.0%%" : "%+.1f%%", (float)(data-128)/255.0*100.0);
@@ -903,7 +892,7 @@ void egr_error_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void evap_pct_formula(int data, char *buf, size_t bufSize)
+void evap_pct_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%%", (float)data/255.0*100.0);
@@ -913,7 +902,7 @@ void evap_pct_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void fuel_level_formula(int data, char *buf, size_t bufSize)
+void fuel_level_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%%", (float)data/255.0*100.0);
@@ -923,7 +912,7 @@ void fuel_level_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void warm_ups_formula(int data, char *buf, size_t bufSize)
+void warm_ups_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%i", data);
@@ -933,7 +922,7 @@ void warm_ups_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void clr_distance_formula(int data, char *buf, size_t bufSize)
+void clr_distance_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -954,7 +943,7 @@ void clr_distance_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void evap_vp_formula(int data, char *buf, size_t bufSize)
+void evap_vp_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -975,7 +964,7 @@ void evap_vp_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void baro_pressure_formula(int data, char *buf, size_t bufSize)
+void baro_pressure_formula(int data, char *buf, unsigned long bufSize)
 {
     if (system_of_measurements == METRIC)
     {
@@ -996,7 +985,7 @@ void baro_pressure_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void o2_sensor_wrc_formula(int data, char *buf, size_t bufSize)
+void o2_sensor_wrc_formula(int data, char *buf, unsigned long bufSize)
 {
     float eq_ratio, o2_ma; // equivalence ratio and sensor current
 
@@ -1011,7 +1000,7 @@ void o2_sensor_wrc_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void cat_temp_formula(int data, char *buf, size_t bufSize)
+void cat_temp_formula(int data, char *buf, unsigned long bufSize)
 {
     float c, f;
 
@@ -1037,7 +1026,7 @@ void cat_temp_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void ecu_voltage_formula(int data, char *buf, size_t bufSize)
+void ecu_voltage_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.3f V", (float)data*0.001);
@@ -1047,7 +1036,7 @@ void ecu_voltage_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void abs_load_formula(int data, char *buf, size_t bufSize)
+void abs_load_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%%", (float)data*100/255);
@@ -1057,7 +1046,7 @@ void abs_load_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void eq_ratio_formula(int data, char *buf, size_t bufSize)
+void eq_ratio_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.3f", (float)data*0.0000305);
@@ -1067,7 +1056,7 @@ void eq_ratio_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void relative_tp_formula(int data, char *buf, size_t bufSize)
+void relative_tp_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
@@ -1077,7 +1066,7 @@ void relative_tp_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void amb_air_temp_formula(int data, char *buf, size_t bufSize)
+void amb_air_temp_formula(int data, char *buf, unsigned long bufSize)
 {
     int c, f;
 
@@ -1103,7 +1092,7 @@ void amb_air_temp_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void abs_tp_formula(int data, char *buf, size_t bufSize)
+void abs_tp_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
@@ -1113,7 +1102,7 @@ void abs_tp_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void tac_pct_formula(int data, char *buf, size_t bufSize)
+void tac_pct_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%.1f%%", (float)data*100.0/255.0);
@@ -1123,7 +1112,7 @@ void tac_pct_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void mil_time_formula(int data, char *buf, size_t bufSize)
+void mil_time_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%i hrs %i min", data/60, data%60);
@@ -1133,7 +1122,7 @@ void mil_time_formula(int data, char *buf, size_t bufSize)
 }
 
 
-void clr_time_formula(int data, char *buf, size_t bufSize)
+void clr_time_formula(int data, char *buf, unsigned long bufSize)
 {
 #ifdef WIN_VS6
     sprintf(buf, "%i hrs %i min", data/60, data%60);

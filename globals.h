@@ -8,16 +8,25 @@
 #define METRIC     0
 #define IMPERIAL    1
 
-#ifndef WINDDK
 #ifdef WIN_VS6
-//#include <winbase.h>
-#else // WIN_VS6
-#include <unistd.h>
-#define HANDLE  int
-#define DWORD   long
-#define Sleep(x)   sleep((x)*1000)
+#include <windows.h>
 #endif // WIN_VS6
+
+#ifdef WINDDK
+#include <windows.h>
+#include <strsafe.h>
 #endif // WINDDK
+
+#ifdef WINWATCOM
+#include <windows.h>
+#include <strsafe.h>
+#endif // WINWATCOM
+
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifndef StringCchPrintf
 #define StringCchPrintf    snprintf
@@ -30,5 +39,9 @@
 #ifndef StringCchCatN
 #define StringCchCatN strncat
 #endif // StringCchCatN
+
+#ifndef NULL
+#define NULL    0L
+#endif
 
 #endif  /* GLOBALS_H */

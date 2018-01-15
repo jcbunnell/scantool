@@ -6,12 +6,12 @@ extern "C" {
 #endif
 
 #define MAX_BANKS_OF_20 8       // number of banks to query for data
-typedef enum
+typedef enum _OBD_MODES
 {
     MODE_CURRENT_DATA=1,
     MODE_FREEZE_FRAME_DATA=2,
     MODE_STORED_DIAG_TROUBLE_CODES=3,
-    MODE_REQUEST_VIN=9,
+    MODE_REQUEST_VIN=9
 } OBD_MODES;
 
 #ifdef LOG_COMMS
@@ -25,7 +25,7 @@ extern int stopWork;
 
 void getStoredDiagnosticCodes();
 void process_all_codes(char *simBuffer);
-void workInit(char *, size_t, int, char *, size_t , char *, size_t);
+void workInit(char *, unsigned long, int, char *, unsigned long , char *, unsigned long);
 #ifdef __cplusplus
    }
 #endif

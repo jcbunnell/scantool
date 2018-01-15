@@ -10,6 +10,7 @@
 #include <windowsx.h>
 #include "resource.h"
 #endif // WIN_VS6
+#include "globals.h"
 #include "trouble_code_reader.h"
 
 

@@ -28,6 +28,7 @@
 #ifdef WIN_GUI
 #include "resource.h"
 #endif // WIN_GUI
+#include <ctype.h>
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
@@ -79,7 +80,7 @@ static char BCDToByte(char hi, char lo)
     return (hi << 4) + lo;
 }
 
-static long getVinInfo(char *simBuffer, size_t simBufSize, char *pVin, size_t vinSize, char *pYear, size_t yearSize)
+static long getVinInfo(char *simBuffer, unsigned long simBufSize, char *pVin, unsigned long vinSize, char *pYear, unsigned long yearSize)
 {
     int response;
     char cmdbuf[8];
@@ -244,7 +245,7 @@ static long getVinInfo(char *simBuffer, size_t simBufSize, char *pVin, size_t vi
     return numBytes;
 }
 
-void workInit(char *simBuffer, size_t simBufSize, int comPortNumber, char *pVin, size_t vinSize, char *pYear, size_t yearSize)
+void workInit(char *simBuffer, unsigned long simBufSize, int comPortNumber, char *pVin, unsigned long vinSize, char *pYear, unsigned long yearSize)
 {
     initializeUnknownList();
     if (simBuffer)

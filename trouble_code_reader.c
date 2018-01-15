@@ -1,15 +1,3 @@
-#ifdef WINDDK
-#include <windows.h>
-#include <strsafe.h>
-#endif // WINDDK
-#ifdef WIN_VS6
-#include <windows.h>
-#endif // WIN_VS6
-#include <string.h>
-#include <ctype.h>
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include "globals.h"
 #include "serial.h"
 #include "trouble_code_reader.h"
@@ -49,12 +37,10 @@ static int mil_is_on; // MIL is ON or OFF
 TROUBLE_CODE unknownTCList[MAX_UNKNOWN_SIZE];
 
 static void add_trouble_code(char *, int);
-static int get_number_of_codes(void);
 static void clear_trouble_codes(void);
 
 // function definitions:
 static void trouble_codes_simulator(int show);
-static void handle_errors(int error, int operation);
 
 extern COMPORT comport;
 
@@ -87,9 +73,9 @@ int parse_dtcs(const char *response, int pending)
 {
     char code_letter[] = "PCBU";
     int dtc_count = 0;
-    size_t k;
+    unsigned long k;
     char temp_trouble_code[CODE_LEN + 1];
-    size_t respLen = strlen(response);
+    unsigned long respLen = (unsigned long)strlen(response);
     ULONG respConvert;
 
     for (k = 0; k < respLen; k += 4)    // read codes
@@ -269,44 +255,6 @@ int handle_read_codes(char *vehicle_response, int pending)
     return dtc_count; // return the actual number of codes read
 }
 
-void handle_errors(int error, int operation)
-{
-    static int retry_attempts = NUM_OF_RETRIES;
-
-    if (error == BUS_ERROR || error == UNABLE_TO_CONNECT || error == BUS_INIT_ERROR)
-    {
-        display_error_message(error, FALSE);
-        retry_attempts = NUM_OF_RETRIES;
-        clear_trouble_codes();
-        mil_is_on = FALSE;
-    }
-    else    // if we received "BUS BUSY", "DATA ERROR", "<DATA ERROR", SERIAL_ERROR, or RUBBISH,
-    {
-        // try to re-send the request, do nothing if successful and alert user if failed:
-        if (retry_attempts > 0) //
-        {
-            retry_attempts--;
-            switch (operation)
-            {
-            case READ_CODES:
-            case READ_PENDING:
-            case NUM_OF_CODES:  // if we are currently reading codes,
-                break;
-
-            case CLEAR_CODES:   // if we are currently clearing codes,
-                break;
-            }
-        }
-        else
-        {
-            display_error_message(error, FALSE);
-            retry_attempts = NUM_OF_RETRIES; // reset the number of retry attempts
-            clear_trouble_codes();
-            mil_is_on = FALSE;
-        }
-    }
-}
-
 void add_trouble_code(char *init_code, int pending)
 {
     if (init_code)
@@ -367,18 +315,6 @@ void add_trouble_code(char *init_code, int pending)
     }
 }
 
-int get_number_of_codes(void)
-{
-    int iCount = 0;
-    int k = 0;
-    while (master_trouble_list[k].code)
-    {
-        iCount += master_trouble_list[k].foundCount;
-        ++k;
-    }
-    return iCount;
-}
-
 void clear_trouble_codes(void)
 {
     int k = 0;
@@ -389,17 +325,17 @@ void clear_trouble_codes(void)
     }
 }
 
-void printTroubleCodes(char *buf, size_t bufSize)
+void printTroubleCodes(char *buf, unsigned long bufSize)
 {
     int numFound = 0;
     int k = 0;
-    size_t nowLen;
+    unsigned long nowLen;
     while (master_trouble_list[k].code)
     {
         if (master_trouble_list[k].foundCount)
         {
             numFound += master_trouble_list[k].foundCount;
-            nowLen = strlen(buf);
+            nowLen = (unsigned long)strlen(buf);
 #ifdef WIN_VS6
             sprintf(buf + nowLen, "%s(%d) %s\n", master_trouble_list[k].code, master_trouble_list[k].foundCount, master_trouble_list[k].description);
 #else // WIN_VS6
@@ -412,7 +348,7 @@ void printTroubleCodes(char *buf, size_t bufSize)
     while (k < MAX_UNKNOWN_SIZE && unknownTCList[k].code)
     {
         ++numFound;
-        nowLen = strlen(buf);
+        nowLen = (unsigned long)strlen(buf);
 #ifdef WIN_VS6
         sprintf(buf + nowLen, "%s Not Found\n", unknownTCList[k].code);
 #else // WIN_VS6
@@ -422,7 +358,7 @@ void printTroubleCodes(char *buf, size_t bufSize)
     }
     if (numFound == 0)
     {
-        nowLen = strlen(buf);
+        nowLen = (unsigned long)strlen(buf);
 #ifdef WIN_VS6
         sprintf(buf + nowLen, "None\n");
 #else // WIN_VS6

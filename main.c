@@ -16,16 +16,14 @@
  *    TODO:
  *    - pending DTCs
  *    - freeze frames
+ *    * WINVER=0x0601
  */
 
-#ifdef WINDDK
-#include <windows.h>
-#endif // WINDDK
+#include "globals.h"
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "globals.h"
 #include "topwork.h"
 #include "serial.h"
 #include "sensors.h"
@@ -40,7 +38,7 @@ int main(int argc, char *argv[])
     int index = 1;
     int comPortNumber=7;
     char *simData = NULL;
-    size_t simSize = 0;
+    unsigned long simSize = 0;
     while (argc > index)
     {
         FILE *inFile = NULL;

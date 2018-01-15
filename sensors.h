@@ -66,7 +66,7 @@
 #define IDC_MODELYEARVALUE              0
 #endif  /* WIN_GUI*/
 
-void obd_requirements_formula(int data, char *buf, size_t bufSize);
+void obd_requirements_formula(int data, char *buf, unsigned long bufSize);
 void process_and_display_data(char *buf, char *simBuffer);
 int codeIsDisplayed(unsigned long index);
 

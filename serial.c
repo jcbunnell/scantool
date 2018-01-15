@@ -108,7 +108,7 @@ int read_comport(char *response, DWORD *numBytes)
 {
 //   char *prompt_pos = NULL;
 
-   long errors;
+   DWORD errors;
    COMSTAT stat;
 
    *numBytes = 0;
@@ -248,7 +248,7 @@ const char *get_protocol_string(int interface_type, int protocol_id)
 }
 
 
-int sendAndWaitForResponse(char *buf, size_t bufSize, char *cmdbuf, DWORD *numBytes, long sleepTimeMs)
+int sendAndWaitForResponse(char *buf, unsigned long bufSize, char *cmdbuf, DWORD *numBytes, long sleepTimeMs)
 {
    int response;
 

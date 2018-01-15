@@ -74,7 +74,7 @@ void start_serial_timer(int delay);
 int process_response(const char *cmd_sent, char *msg_received);
 const char *get_protocol_string(int interface_type, int protocol_id);
 int display_error_message(int error, int retry);
-int sendAndWaitForResponse(char *buf, size_t bufSize, char *cmdbuf, DWORD *numBytes, long sleepTimeMs);
+int sendAndWaitForResponse(char *buf, unsigned long bufSize, char *cmdbuf, DWORD *numBytes, long sleepTimeMs);
 #ifdef __cplusplus
    }
 #endif
